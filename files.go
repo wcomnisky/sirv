@@ -91,3 +91,58 @@ func (c *Client) DeleteFileOrEmptyFolder(ctx context.Context, filename Filename)
 
 	return nil
 }
+
+func (c *Client) UploadFile(ctx context.Context, localPath string, remoteFilename string) error {
+	reqUrl := fmt.Sprintf("%s/files/upload?filename=%s", c.BaseURL, url.PathEscape(remoteFilename))
+
+	file, err := os.Open(localPath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	resp, err := c.makeSimpleRequest(ctx, http.MethodPost, reqUrl, file)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	return nil
+}
+
+func (c *Client) CreateEmptyFolder(ctx context.Context, dirname string) error {
+	reqUrl := fmt.Sprintf("%s/files/mkdir?dirname=%s", c.BaseURL, url.PathEscape(dirname))
+
+	resp, err := c.makeSimpleRequest(ctx, http.MethodPost, reqUrl, nil)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("unexpected status code: %d. Response: %s", resp.StatusCode, string(bodyBytes))
+	}
+
+	return nil
+}
+
+func (c *Client) RenameFileOrFolder(ctx context.Context, from, to string) error {
+	reqUrl := fmt.Sprintf("%s/files/rename?from=%s&to=%s", c.BaseURL, url.PathEscape(from), url.PathEscape(to))
+
+	resp, err := c.makeSimpleRequest(ctx, http.MethodPost, reqUrl, nil)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	return nil
+}
