@@ -92,26 +92,17 @@ func (c *Client) DeleteFileOrEmptyFolder(ctx context.Context, filename Filename)
 	return nil
 }
 
-func (c *Client) UploadFile(ctx context.Context, localPath string, remoteFilename string) error {
-	reqUrl := fmt.Sprintf("%s/files/upload?filename=%s", c.BaseURL, url.PathEscape(remoteFilename))
-
+func (c *Client) UploadFile(ctx context.Context, filename, localPath string) error {
 	file, err := os.Open(localPath)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 
-	resp, err := c.makeSimpleRequest(ctx, http.MethodPost, reqUrl, file)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
-	}
-
-	return nil
+	contentType := http.DetectContentType([]byte{})
+	reqUrl := fmt.Sprintf("%s/files/upload?filename=%s", c.BaseURL, url.PathEscape(filename))
+	_, err = c.makeHTTPRequest(ctx, http.MethodPost, reqUrl, file, contentType)
+	return err
 }
 
 func (c *Client) CreateEmptyFolder(ctx context.Context, dirname string) error {

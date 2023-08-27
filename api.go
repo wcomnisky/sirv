@@ -38,16 +38,15 @@ func (c *Client) GetToken(ctx context.Context, payload AuthPayload) (*TokenRespo
 	return &tokenResp, nil
 }
 
-func (c *Client) makeHTTPRequest(ctx context.Context, method, url string, body io.Reader, isJson bool) (*http.Response, error) {
+func (c *Client) makeHTTPRequest(ctx context.Context, method, url string, body io.Reader, contentType string) (*http.Response, error) {
 	req, err := http.NewRequestWithContext(ctx, method, url, body)
 	if err != nil {
 		return nil, err
 	}
 
 	req.Header.Add("Authorization", "Bearer "+c.Token)
-
-	if isJson {
-		req.Header.Add("Content-Type", "application/json")
+	if contentType != "" {
+		req.Header.Add("Content-Type", contentType)
 	}
 
 	resp, err := c.HTTPClient.Do(req)
