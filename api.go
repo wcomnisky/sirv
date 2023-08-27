@@ -55,7 +55,22 @@ func (c *Client) makeHTTPRequest(ctx context.Context, method, url string, body i
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		body := new(bytes.Buffer)
+		body.ReadFrom(resp.Body)
+		msg := fmt.Sprintf("unexpected status code: %d", resp.StatusCode)
+		if body.Len() > 0 {
+			var respBody struct {
+				StatusCode int    `json:"statusCode"`
+				Error      string `json:"error"`
+				Message    string `json:"message"`
+			}
+			err = json.Unmarshal(body.Bytes(), &respBody)
+			if err == nil {
+				msg += fmt.Sprintf(". Message: %s", respBody.Message)
+			}
+		}
+
+		return nil, fmt.Errorf(msg)
 	}
 
 	return resp, nil
@@ -71,15 +86,11 @@ func (c *Client) makeRequest(ctx context.Context, method, url string, requestBod
 		body = bytes.NewReader(bodyBytes)
 	}
 
-	resp, err := c.makeHTTPRequest(ctx, method, url, body, true)
+	resp, err := c.makeHTTPRequest(ctx, method, url, body, "")
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
 
 	return json.NewDecoder(resp.Body).Decode(result)
-}
-
-func (c *Client) makeSimpleRequest(ctx context.Context, method, url string, body io.Reader) (*http.Response, error) {
-	return c.makeHTTPRequest(ctx, method, url, body, false)
 }

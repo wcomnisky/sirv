@@ -60,7 +60,7 @@ func (c *Client) GetFileInfo(ctx context.Context, filename string) (*FileInfo, e
 func (c *Client) DownloadFile(ctx context.Context, filename Filename, destPath string) error {
 	reqUrl := fmt.Sprintf("%s/files/download?filename=%s", c.BaseURL, url.PathEscape(string(filename)))
 
-	resp, err := c.makeSimpleRequest(ctx, http.MethodGet, reqUrl, nil)
+	resp, err := c.makeHTTPRequest(ctx, http.MethodGet, reqUrl, nil, "application/json")
 	if err != nil {
 		return err
 	}
@@ -79,7 +79,7 @@ func (c *Client) DownloadFile(ctx context.Context, filename Filename, destPath s
 func (c *Client) DeleteFileOrEmptyFolder(ctx context.Context, filename Filename) error {
 	reqUrl := fmt.Sprintf("%s/files/delete?filename=%s", c.BaseURL, url.PathEscape(string(filename)))
 
-	resp, err := c.makeSimpleRequest(ctx, http.MethodPost, reqUrl, nil)
+	resp, err := c.makeHTTPRequest(ctx, http.MethodPost, reqUrl, nil, "application/json")
 	if err != nil {
 		return err
 	}
@@ -92,23 +92,22 @@ func (c *Client) DeleteFileOrEmptyFolder(ctx context.Context, filename Filename)
 	return nil
 }
 
-func (c *Client) UploadFile(ctx context.Context, filename, localPath string) error {
+func (c *Client) UploadFile(ctx context.Context, dstFilename, localPath string) error {
 	file, err := os.Open(localPath)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 
-	contentType := http.DetectContentType([]byte{})
-	reqUrl := fmt.Sprintf("%s/files/upload?filename=%s", c.BaseURL, url.PathEscape(filename))
-	_, err = c.makeHTTPRequest(ctx, http.MethodPost, reqUrl, file, contentType)
+	reqUrl := fmt.Sprintf("%s/files/upload?filename=%s", c.BaseURL, url.PathEscape(dstFilename))
+	_, err = c.makeHTTPRequest(ctx, http.MethodPost, reqUrl, file, "")
 	return err
 }
 
 func (c *Client) CreateEmptyFolder(ctx context.Context, dirname string) error {
 	reqUrl := fmt.Sprintf("%s/files/mkdir?dirname=%s", c.BaseURL, url.PathEscape(dirname))
 
-	resp, err := c.makeSimpleRequest(ctx, http.MethodPost, reqUrl, nil)
+	resp, err := c.makeHTTPRequest(ctx, http.MethodPost, reqUrl, nil, "application/json")
 	if err != nil {
 		return err
 	}
@@ -125,7 +124,7 @@ func (c *Client) CreateEmptyFolder(ctx context.Context, dirname string) error {
 func (c *Client) RenameFileOrFolder(ctx context.Context, from, to string) error {
 	reqUrl := fmt.Sprintf("%s/files/rename?from=%s&to=%s", c.BaseURL, url.PathEscape(from), url.PathEscape(to))
 
-	resp, err := c.makeSimpleRequest(ctx, http.MethodPost, reqUrl, nil)
+	resp, err := c.makeHTTPRequest(ctx, http.MethodPost, reqUrl, nil, "application/json")
 	if err != nil {
 		return err
 	}
